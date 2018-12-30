@@ -12,19 +12,20 @@ namespace KinectMultiFaceRecognition
 {
     public static class DrawingEngine
     {
-        public static Color[] colorPoints = new Color[]{ Colors.YellowGreen,
-                                                         Colors.DarkCyan,
-                                                         Colors.HotPink,
-                                                         Colors.Khaki,
-                                                         Colors.Orchid,
-                                                         Colors.Sienna};
 
-        public static Color[] colorBones = new Color[]{ Colors.Purple,
-                                                        Colors.Gold,
-                                                        Colors.Lavender,
-                                                        Colors.OrangeRed,
-                                                        Colors.Brown,
-                                                        Colors.GreenYellow};
+        public static Color[] colorPoints = new Color[]{ Colors.YellowGreen, Colors.DarkCyan, Colors.HotPink,
+                                                         Colors.Khaki, Colors.Orchid, Colors.Sienna};
+
+        public static Color[] colorBones = new Color[]{ Colors.Purple, Colors.Gold, Colors.Lavender,
+                                                        Colors.OrangeRed, Colors.Brown, Colors.GreenYellow};
+
+        private static readonly int[,] boneIndices = { {3, 2},   {2, 20},   {20, 4},    {20, 8},
+                                                       {20, 1},  {4, 5},    {8, 9 },    {5, 6 },
+                                                       {9, 10},  {6, 7},    {10, 11},   {11, 23},
+                                                       {7, 21},  {21, 22},  {23, 24 },  {1, 0 },
+                                                       {0, 12 }, {0, 16 },  {12, 13 },  {16, 17 },
+                                                       {13, 14}, {17, 18 }, {14, 15 },  {18, 19 }
+        };
 
         public static void DrawSkeleton(this Canvas canvas, KinectSensor sensor, Body body, int colorIndex)
         {
@@ -35,30 +36,12 @@ namespace KinectMultiFaceRecognition
                 canvas.DrawPoint(sensor, joint, colorPoints[colorIndex]);
             }
 
-            canvas.DrawLine(sensor, body.Joints[JointType.Head], body.Joints[JointType.Neck], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.Neck], body.Joints[JointType.SpineShoulder], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.SpineShoulder], body.Joints[JointType.ShoulderLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.SpineShoulder], body.Joints[JointType.ShoulderRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.SpineShoulder], body.Joints[JointType.SpineMid], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.ShoulderLeft], body.Joints[JointType.ElbowLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.ShoulderRight], body.Joints[JointType.ElbowRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.ElbowLeft], body.Joints[JointType.WristLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.ElbowRight], body.Joints[JointType.WristRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.WristLeft], body.Joints[JointType.HandLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.WristRight], body.Joints[JointType.HandRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.HandLeft], body.Joints[JointType.HandTipLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.HandRight], body.Joints[JointType.HandTipRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.HandTipLeft], body.Joints[JointType.ThumbLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.HandTipRight], body.Joints[JointType.ThumbRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.SpineMid], body.Joints[JointType.SpineBase], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.SpineBase], body.Joints[JointType.HipLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.SpineBase], body.Joints[JointType.HipRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.HipLeft], body.Joints[JointType.KneeLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.HipRight], body.Joints[JointType.KneeRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.KneeLeft], body.Joints[JointType.AnkleLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.KneeRight], body.Joints[JointType.AnkleRight], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.AnkleLeft], body.Joints[JointType.FootLeft], colorBones[colorIndex]);
-            canvas.DrawLine(sensor, body.Joints[JointType.AnkleRight], body.Joints[JointType.FootRight], colorBones[colorIndex]);
+
+            for(int i = 0; i < boneIndices.GetLength(0); i++)
+            {
+                canvas.DrawLine(sensor, body.Joints[(JointType)boneIndices[i,0]], 
+                                        body.Joints[(JointType)boneIndices[i,1]], colorBones[colorIndex]);
+            }
         }
 
         private static ColorSpacePoint ToColorSpacePoint(this Joint joint, KinectSensor sensor)
@@ -79,7 +62,7 @@ namespace KinectMultiFaceRecognition
             {
                 return;
             }
-
+            
             Ellipse ellipse = new Ellipse
             {
                 Width = 20,
@@ -87,8 +70,8 @@ namespace KinectMultiFaceRecognition
                 Fill = new SolidColorBrush(color)
             };
 
-            Canvas.SetLeft(ellipse, jointPoint.X);
-            Canvas.SetTop(ellipse, jointPoint.Y);
+            Canvas.SetLeft(ellipse, jointPoint.X - ellipse.Width / 2);
+            Canvas.SetTop(ellipse, jointPoint.Y - ellipse.Height / 2);
 
             canvas.Children.Add(ellipse);
         }
@@ -126,7 +109,7 @@ namespace KinectMultiFaceRecognition
             canvas.Children.Add(line);
         }
 
-        /*
+        
         public static void DrawFace(this Canvas canvas, FaceTracker state, KinectSensor sensor, int colorIndex)
         {
             var vertices = state.Model.CalculateVerticesForAlignment(state.Alignment);
@@ -142,9 +125,7 @@ namespace KinectMultiFaceRecognition
                     };
 
                     CameraSpacePoint vertice = vertices[index];
-
-                    //DepthSpacePoint point = sensor.CoordinateMapper.MapCameraPointToDepthSpace(vertice);
-                    DepthSpacePoint point = vertice.ScaleTo(canvas.ActualWidth, canvas.ActualHeight);
+                    ColorSpacePoint point = sensor.CoordinateMapper.MapCameraPointToColorSpace(vertice);
 
                     if (float.IsInfinity(point.X) || float.IsInfinity(point.Y)) return;
 
@@ -156,7 +137,7 @@ namespace KinectMultiFaceRecognition
             }
 
         }
-        */
+        
 
         public static void DrawInfo(this Canvas canvas, IList<Body> _bodies, Dictionary<ulong, FaceTracker> facialStates)
         {

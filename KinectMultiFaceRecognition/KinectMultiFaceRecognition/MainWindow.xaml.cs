@@ -76,8 +76,14 @@ namespace KinectMultiFaceRecognition
             {
                 if (frame != null)
                 {
-                    frame.CopyConvertedFrameDataToArray(_pixels, ColorImageFormat.Bgra);
-
+                    if (frame.RawColorImageFormat == ColorImageFormat.Bgra)
+                    {
+                        frame.CopyRawFrameDataToArray(_pixels);
+                    }
+                    else
+                    {
+                        frame.CopyConvertedFrameDataToArray(_pixels, ColorImageFormat.Bgra);
+                    }
                     _bitmap.Lock();
 
                     Marshal.Copy(_pixels, 0, _bitmap.BackBuffer, _pixels.Length);
@@ -121,7 +127,7 @@ namespace KinectMultiFaceRecognition
                     {
                         stateEntry.Value.Model = faceFrame.FaceModel;
                         faceFrame.GetAndRefreshFaceAlignmentResult(stateEntry.Value.Alignment);
-                        //canvasDraw.DrawFace(stateEntry.Value,_sensor, colorIndex++);
+                        canvasDraw.DrawFace(stateEntry.Value,_sensor, colorIndex++);
                     }
                 }
             }

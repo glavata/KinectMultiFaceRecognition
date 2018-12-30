@@ -9,7 +9,7 @@
         Loaded="Window_Loaded"
         Closed="Window_Closed">
     <Grid>
-        <Image Name="camera" />
-        <Canvas x:Name="canvasDraw"/>
+        <Image Name="camera" Width="1920" Height="1080"/>
+        <Canvas x:Name="canvasDraw" Width="1920" Height="1080"/>
     </Grid>
 </Window>
