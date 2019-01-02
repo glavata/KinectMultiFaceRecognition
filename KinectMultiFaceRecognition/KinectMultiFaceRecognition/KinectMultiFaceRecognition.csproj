@@ -70,6 +70,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DrawingEngine.cs" />
+    <Compile Include="FaceManager.cs" />
     <Compile Include="FaceTracker.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

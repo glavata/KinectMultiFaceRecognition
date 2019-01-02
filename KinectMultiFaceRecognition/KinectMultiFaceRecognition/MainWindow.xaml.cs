@@ -16,8 +16,10 @@ namespace KinectMultiFaceRecognition
     public partial class MainWindow : Window
     {
         Dictionary<ulong, FaceTracker> facialStates = new Dictionary<ulong, FaceTracker>(6);
+        private FaceManager faceManager;
         KinectSensor _sensor;
         MultiSourceFrameReader _reader;
+        private DrawingEngine drawingEngine;
         IList<Body> _bodies;
 
         private WriteableBitmap _bitmap = null;
@@ -45,6 +47,10 @@ namespace KinectMultiFaceRecognition
 
                 this.facialStates = new Dictionary<ulong, FaceTracker>();
 
+                this.faceManager = new FaceManager(_sensor);
+
+                this.drawingEngine = new DrawingEngine(_sensor, canvasDraw);
+
                 _reader = _sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Body |
                                                             FrameSourceTypes.Color |
                                                             FrameSourceTypes.Depth |
@@ -52,6 +58,7 @@ namespace KinectMultiFaceRecognition
                 _reader.MultiSourceFrameArrived += Reader_MultiSourceFrameArrived;
 
                 camera.Source = _bitmap;
+
             }
         }
 
@@ -71,7 +78,7 @@ namespace KinectMultiFaceRecognition
         void Reader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
             var reference = e.FrameReference.AcquireFrame();
-
+            
             using (var frame = reference.ColorFrameReference.AcquireFrame())
             {
                 if (frame != null)
@@ -88,61 +95,27 @@ namespace KinectMultiFaceRecognition
 
                     Marshal.Copy(_pixels, 0, _bitmap.BackBuffer, _pixels.Length);
                     _bitmap.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
-                    _bitmap.Unlock();
+                    _bitmap.Unlock();                  
                 }
             }
-
-            int colorIndex = 0;
+            
             using (var frame = reference.BodyFrameReference.AcquireFrame())
             {
+                bool dataReceived = false;
                 if (frame != null)
-                {
-                    canvasDraw.Children.Clear();
-
-                    _bodies = new Body[frame.BodyFrameSource.BodyCount];
-
+                {                  
+                    _bodies = new Body[frame.BodyFrameSource.BodyCount];                  
                     frame.GetAndRefreshBodyData(_bodies);
-
-                    foreach (var body in _bodies.Where(b => b.IsTracked))
-                    {
-                        if (!this.facialStates.ContainsKey(body.TrackingId))
-                        {
-                            FaceTracker newStateEntry = new FaceTracker(_sensor, body.TrackingId,
-                              this.OnTrackingIdLost);
-
-                            this.facialStates[body.TrackingId] = newStateEntry;
-                        }
-
-                        canvasDraw.DrawSkeleton(_sensor, body, colorIndex++);
-                    }
+                    dataReceived = true;
                 }
-            }
 
-            colorIndex = 0;
-            foreach (var stateEntry in this.facialStates)
-            {
-                using (var faceFrame = stateEntry.Value.Reader.AcquireLatestFrame())
+                if(dataReceived)
                 {
-                    if ((faceFrame != null) && (faceFrame.FaceModel != null) && faceFrame.IsFaceTracked)
-                    {
-                        stateEntry.Value.Model = faceFrame.FaceModel;
-                        faceFrame.GetAndRefreshFaceAlignmentResult(stateEntry.Value.Alignment);
-                        canvasDraw.DrawFace(stateEntry.Value,_sensor, colorIndex++);
-                    }
+                    drawingEngine.DrawBodies(_bodies);                   
                 }
             }
 
-            if (_bodies != null)
-                canvasDraw.DrawInfo(_bodies, facialStates);
-        }
-
-        void OnTrackingIdLost(object sender, TrackingIdLostEventArgs args)
-        {
-            if (this.facialStates.ContainsKey(args.TrackingId))
-            {
-                this.facialStates[args.TrackingId].Reader.Dispose();
-                this.facialStates.Remove(args.TrackingId);
-            }
+            drawingEngine.DrawLatestFaceResults(this.faceManager);
         }
 
     }

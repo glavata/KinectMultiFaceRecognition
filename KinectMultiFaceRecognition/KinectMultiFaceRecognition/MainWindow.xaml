@@ -6,10 +6,11 @@
         xmlns:local="clr-namespace:KinectMultiFaceRecognition"
         mc:Ignorable="d"
         Title="KinectMultiFaceRecognition" Height="1080" Width="1920" WindowStartupLocation="CenterScreen" WindowState="Maximized"
-        Loaded="Window_Loaded"
+        Loaded="Window_Loaded" Background="Black"
         Closed="Window_Closed">
     <Grid>
         <Image Name="camera" Width="1920" Height="1080"/>
         <Canvas x:Name="canvasDraw" Width="1920" Height="1080"/>
+     
     </Grid>
 </Window>
