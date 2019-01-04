@@ -78,7 +78,9 @@ namespace KinectMultiFaceRecognition
         void Reader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
             var reference = e.FrameReference.AcquireFrame();
-            
+
+            WriteableBitmap lastBitmap = null;
+
             using (var frame = reference.ColorFrameReference.AcquireFrame())
             {
                 if (frame != null)
@@ -95,7 +97,8 @@ namespace KinectMultiFaceRecognition
 
                     Marshal.Copy(_pixels, 0, _bitmap.BackBuffer, _pixels.Length);
                     _bitmap.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
-                    _bitmap.Unlock();                  
+                    _bitmap.Unlock();
+                    lastBitmap = _bitmap;
                 }
             }
             
@@ -115,7 +118,7 @@ namespace KinectMultiFaceRecognition
                 }
             }
 
-            drawingEngine.DrawLatestFaceResults(this.faceManager);
+            drawingEngine.DrawLatestFaceResults(this.faceManager, lastBitmap);
         }
 
     }

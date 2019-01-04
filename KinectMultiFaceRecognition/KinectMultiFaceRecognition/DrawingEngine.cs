@@ -3,11 +3,15 @@ using Microsoft.Kinect.Face;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+
 
 namespace KinectMultiFaceRecognition
 {
@@ -15,9 +19,7 @@ namespace KinectMultiFaceRecognition
     {
 
         private KinectSensor sensor;
-        private Canvas canvasBodies;
         private Canvas canvas;
-     
 
         public Color[] colorPoints = new Color[]{ Colors.YellowGreen, Colors.DarkCyan, Colors.HotPink,
                                                   Colors.Khaki, Colors.Orchid, Colors.Sienna};
@@ -42,9 +44,10 @@ namespace KinectMultiFaceRecognition
             this.canvas = canvas;
         }
 
-        public void DrawLatestFaceResults(FaceManager manager)
+        public void DrawLatestFaceResults(FaceManager manager, WriteableBitmap lastBitmap)
         {
-            //canvasFaces.Children.Clear();
+            int counter = 0;
+
             for (int i = 0; i < manager.bodyCount; i++)
             {
                 if (manager.faceTrackers[i].Reader != null)
@@ -52,23 +55,46 @@ namespace KinectMultiFaceRecognition
                     HighDefinitionFaceFrame frame = manager.faceTrackers[i].Reader.AcquireLatestFrame();
                     
                     if (frame != null && frame.FaceModel != null && frame.IsFaceTracked)
-                    {
+                    {                    
+                        DrawFaceBoundingBox(frame, manager.faceTrackers[i], faceColors[i]);
+                        DrawFaceBodyInfo(manager.faceTrackers[i], faceColors[i], counter);
                         
-                        DrawFaceBoundingBox(frame, manager.faceTrackers[i].Alignment, faceColors[i]);
-                        //manager.faceTrackers[i].Model = frame.FaceModel;
-                        //DrawFaceFeatures(frame, manager.faceTrackers[i].Alignment, this.faceColors[i]);
+                        if(!manager.faceTrackers[i].ScreenshotTaken && manager.faceTrackers[i].CollectionCompleted)
+                        {
+                            ScreenshotFace(manager.faceTrackers[i], lastBitmap);                            
+                        }
+
+                        counter++;
                     }
                 }
             }
         }
-
-        private void DrawFaceBoundingBox(HighDefinitionFaceFrame frame, FaceAlignment alignment, Color color)
+        private void DrawFaceBodyInfo(FaceTracker tracker, Color color, int order)
         {
-            frame.GetAndRefreshFaceAlignmentResult(alignment);
-            var vertices = frame.FaceModel.CalculateVerticesForAlignment(alignment);
+            int top = order * 30 + 10;
+
+            TextBlock textBlockBodyInfo = new TextBlock();
+            textBlockBodyInfo.Background = new SolidColorBrush(Colors.White);
+            textBlockBodyInfo.Text = tracker.TrackingId.ToString();
+
+            textBlockBodyInfo.Foreground = new SolidColorBrush(colorPoints[order]);
+            textBlockBodyInfo.Width = 150;
+
+            Canvas.SetLeft(textBlockBodyInfo, 80);
+            Canvas.SetTop(textBlockBodyInfo, top);
+
+            canvas.Children.Add(textBlockBodyInfo);
+        }
+
+        private void DrawFaceBoundingBox(HighDefinitionFaceFrame frame, FaceTracker tracker, Color color)
+        {
+
+            frame.GetAndRefreshFaceAlignmentResult(tracker.Alignment);
+            var vertices = tracker.Model.CalculateVerticesForAlignment(tracker.Alignment);
 
             if (vertices.Count > 0)
             {
+
                 CameraSpacePoint verticeTop = vertices[(int)HighDetailFacePoints.ForeheadCenter];
                 ColorSpacePoint pointTop = sensor.CoordinateMapper.MapCameraPointToColorSpace(verticeTop);
 
@@ -90,17 +116,60 @@ namespace KinectMultiFaceRecognition
                 float posY = pointTop.Y;
                 double width = Math.Abs(pointRight.X - pointLeft.X);
                 double height = Math.Abs(pointTop.Y - pointBottom.Y);
-                double lineSize = 7;
+                double lineSize = 5;
 
                 Rectangle rect = CreateFaceBoxRectangle(color, lineSize, width, height);
                 Canvas.SetLeft(rect, posX);
                 Canvas.SetTop(rect, posY);
 
                 canvas.Children.Add(rect);
+                tracker.FaceBox.X = posX;
+                tracker.FaceBox.Y = posY;
+                tracker.FaceBox.Width = width;
+                tracker.FaceBox.Height = height;
+
+                if (!tracker.CollectionEventCalled)
+                {
+                    if (tracker.ModelBuilder.CollectionStatus.HasFlag(FaceModelBuilderCollectionStatus.FrontViewFramesNeeded))
+                    {
+                        Rectangle rectFront = CreateFaceBoxRectangle(color, 5, 30, 30);
+                        Canvas.SetLeft(rectFront, posX + width / 2);
+                        Canvas.SetTop(rectFront, posY + height / 2);
+
+                        canvas.Children.Add(rectFront);
+                    }
+
+                    if (tracker.ModelBuilder.CollectionStatus.HasFlag(FaceModelBuilderCollectionStatus.LeftViewsNeeded))
+                    {
+                        Rectangle rectLeft = CreateFaceBoxRectangle(color, 5, 30, 30);
+                        Canvas.SetLeft(rectLeft, posX - width / 2);
+                        Canvas.SetTop(rectLeft, posY + height / 2);
+
+                        canvas.Children.Add(rectLeft);
+                    }
+
+                    if (tracker.ModelBuilder.CollectionStatus.HasFlag(FaceModelBuilderCollectionStatus.RightViewsNeeded))
+                    {
+                        Rectangle rectRight = CreateFaceBoxRectangle(color, 5, 30, 30);
+                        Canvas.SetLeft(rectRight, posX + width + width / 2);
+                        Canvas.SetTop(rectRight, posY + height / 2);
+
+                        canvas.Children.Add(rectRight);
+                    }
+
+                    if (tracker.ModelBuilder.CollectionStatus.HasFlag(FaceModelBuilderCollectionStatus.TiltedUpViewsNeeded))
+                    {
+                        Rectangle rectUp = CreateFaceBoxRectangle(color, 5, 30, 30);
+                        Canvas.SetLeft(rectUp, posX + width / 2);
+                        Canvas.SetTop(rectUp, posY - height / 2);
+
+                        canvas.Children.Add(rectUp);
+                    }
+                }
             }
         }
 
-        private Rectangle CreateFaceBoxRectangle(Color color, double strokeThickness, double width, double height)
+        private Rectangle CreateFaceBoxRectangle(Color color, double strokeThickness, double width, double height, bool filled = false)
         {
             Rectangle rect = new Rectangle();
             rect.Width = width;
@@ -108,7 +177,14 @@ namespace KinectMultiFaceRecognition
             rect.Stroke = new SolidColorBrush(color);
             rect.StrokeThickness = strokeThickness;
             rect.StrokeLineJoin = PenLineJoin.Round;
-            rect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+            if(!filled)
+            {
+                rect.Fill = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+            }
+            else
+            {
+                rect.Fill = new SolidColorBrush(color);
+            }
             return rect;
         }
 
@@ -138,22 +214,8 @@ namespace KinectMultiFaceRecognition
 
                     canvas.Children.Add(ellipse);
                 }
-            }
-            
-            /*
-            if (renderMessages)
-            {
-                TextBlock textBlock = new TextBlock();
-                textBlock.Text = messages;
-                textBlock.Foreground = new SolidColorBrush(color);
-                textBlock.FontSize = fontSize;
-                Canvas.SetLeft(textBlock, messagesPosition.X);
-                Canvas.SetTop(textBlock, messagesPosition.Y);
-                parentPanel.Children.Add(textBlock);
-            }
-            */
+            }          
         }
-
 
         public void DrawBodies(IList<Body> bodies)
         {
@@ -235,64 +297,17 @@ namespace KinectMultiFaceRecognition
         }
 
 
-        /*
-               public void DrawInfo(IList<Body> _bodies, Dictionary<ulong, FaceTracker> facialStates)
-               {
-                   int top = 10;
-                   int colorsIndex = 0;
+        public void ScreenshotFace(FaceTracker tracker, WriteableBitmap bitmap)
+        {
+            CroppedBitmap cb = new CroppedBitmap(bitmap, 
+                new Int32Rect((int)tracker.FaceBox.X, (int)tracker.FaceBox.Y,
+                (int)tracker.FaceBox.Width,
+                (int)tracker.FaceBox.Height));
 
-                   foreach (var body in _bodies.Where(b => b.IsTracked))
-                   {
-                       TextBlock textBlockBodyInfo = new TextBlock();
-                       textBlockBodyInfo.Background = new SolidColorBrush(Colors.White);
-                       textBlockBodyInfo.Text = body.TrackingId.ToString();
+            DatabaseManager.InsertRecord(cb, tracker.Model.FaceShapeDeformations);
 
-                       //textBlockBodyInfo.Foreground = new SolidColorBrush(colorBones[colorsIndex]);
-                       textBlockBodyInfo.Width = 150;
+            tracker.ScreenshotTaken = true;
 
-                       Canvas.SetLeft(textBlockBodyInfo, 80);
-                       Canvas.SetTop(textBlockBodyInfo, top);
-
-                       canvas.Children.Add(textBlockBodyInfo);
-
-                       if (facialStates != null)
-                       {
-                           if (facialStates.ContainsKey(body.TrackingId))
-                           {
-                               TextBlock textBlockFaceInfo = new TextBlock();
-                               textBlockFaceInfo.Background = new SolidColorBrush(Colors.White);
-                               FaceTracker target = facialStates[body.TrackingId];
-
-                               FaceModel model = target.Model;
-
-                               if (model != null)
-                               {
-
-                                   textBlockFaceInfo.Text = String.Format("{0:0.0000} {1:0.0000} {2:0.0000} {3:0.0000} {4:0.0000} {5:0.0000} {6:0.0000}",
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.Forehead00],
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.Nose00],
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.Eyes00],
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.Cheeks00],
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.MouthBag01],
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.Chin01],
-                                                                         model.FaceShapeDeformations[FaceShapeDeformations.Mouth02]);
-                                   //textBlockFaceInfo.Foreground = new SolidColorBrush(colorPoints[colorsIndex]);
-
-                                   Canvas.SetLeft(textBlockFaceInfo, 220);
-                                   Canvas.SetTop(textBlockFaceInfo, top);
-
-                                   canvas.Children.Add(textBlockFaceInfo);
-                               }
-                           }
-                       }
-
-
-                       colorsIndex++;
-                       top += 30;
-                   }
-
-
-               }
-       */
+        }
     }
 }

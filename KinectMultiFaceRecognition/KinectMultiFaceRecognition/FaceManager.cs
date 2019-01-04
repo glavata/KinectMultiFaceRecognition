@@ -1,6 +1,8 @@
 ﻿using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
 using System.Linq;
+using System.Data.SQLite;
+using System;
 
 namespace KinectMultiFaceRecognition
 {
@@ -29,7 +31,7 @@ namespace KinectMultiFaceRecognition
             for (int i = 0; i < this.bodyCount; i++)
             {
                 this.faceTrackers[i] = new FaceTracker(this.kinectSensor, 0);
-                this.faceTrackers[i].Source.TrackingIdLost += HdFaceSource_TrackingIdLost;
+                //this.faceTrackers[i].Source.TrackingIdLost += HdFaceSource_TrackingIdLost;
             }
         }
 
@@ -44,12 +46,11 @@ namespace KinectMultiFaceRecognition
                     for (int i = 0; i < this.bodyCount; i++)
                     {                       
                         if (!this.faceTrackers[i].Source.IsTrackingIdValid)
-                        {
+                        {                                                  
                             if (this.bodies[i].IsTracked)
                             {
-                                this.faceTrackers[i].Source.TrackingId = this.bodies[i].TrackingId;
-
-                                //TODO: BEGIN FACE DATA COLLECTION
+                                this.faceTrackers[i].TrackingId = this.bodies[i].TrackingId;
+                                this.faceTrackers[i].StartCollecting();
                             }
                         }
                     }

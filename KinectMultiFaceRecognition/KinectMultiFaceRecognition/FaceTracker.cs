@@ -1,6 +1,7 @@
 ﻿using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
 using System;
+using System.Threading.Tasks;
 
 namespace KinectMultiFaceRecognition
 {
@@ -14,6 +15,13 @@ namespace KinectMultiFaceRecognition
             this.Reader = this.Source.OpenReader();
             this.Alignment = new FaceAlignment();
             this.TrackingId = trackingId;
+
+            this.CollectionCompleted = false;         
+            this.CollectionEventCalled = false;
+
+            this.ScreenshotTaken = false;
+            this.Model = new FaceModel();
+            this.FaceBox = new FaceBoundingBox();
         }
 
         public HighDefinitionFaceFrameSource Source { get; set; }
@@ -26,6 +34,14 @@ namespace KinectMultiFaceRecognition
 
         public FaceModel Model { get; set; }
 
+        public FaceBoundingBox FaceBox {get; set;}
+
+        public bool CollectionCompleted { get; private set; }
+
+        public bool CollectionEventCalled { get; private set; }
+
+        public bool ScreenshotTaken { get; set; }
+        
         public ulong TrackingId
         {
             get
@@ -51,22 +67,26 @@ namespace KinectMultiFaceRecognition
             this.ModelBuilder = this.Source.OpenModelBuilder(FaceModelBuilderAttributes.None);
 
             this.ModelBuilder.BeginFaceDataCollection();
-
+            
             this.ModelBuilder.CollectionCompleted += this.HdFaceBuilder_CollectionCompleted;
         }
 
         private void HdFaceBuilder_CollectionCompleted(object sender, FaceModelBuilderCollectionCompletedEventArgs e)
         {
-            //TODO: MESSAGE
-
             var modelData = e.ModelData;
+            Task.Factory.StartNew(() => CreateFaceModel(modelData));
+            this.ModelBuilder.CollectionCompleted -= this.HdFaceBuilder_CollectionCompleted;
 
-            this.Model = modelData.ProduceFaceModel();
+            this.CollectionEventCalled = true;
+        }
 
+        private void CreateFaceModel(FaceModelData data)
+        {
+            this.Model = data.ProduceFaceModel();         
             this.ModelBuilder.Dispose();
             this.ModelBuilder = null;
 
-            //The kinect is done preparing here.
+            this.CollectionCompleted = true;
         }
 
         private void StopCollecting()
