@@ -15,7 +15,11 @@ namespace KinectMultiFaceRecognition
     public static class DatabaseManager
     {
 
+        public static List<RecognizedFace> AllFaces = new List<RecognizedFace>();
+
         private static SQLiteConnection sqliteConn;
+
+        private static readonly string filenameFaces = "database.faces";
 
         public static SQLiteConnection CreateConnection()
         {
@@ -56,7 +60,7 @@ namespace KinectMultiFaceRecognition
             RecognizedFace face = new RecognizedFace() { Name = name, Deformations = deformations };
             string output = JsonConvert.SerializeObject(face);
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(name + ".face", true))
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filenameFaces, true))
             {
                 file.WriteLine(output);
             }
@@ -74,6 +78,21 @@ namespace KinectMultiFaceRecognition
             jEncoder.Save(mStream);
         }
 
+        public static void LoadFaceInfo()
+        {
+            if (!File.Exists(filenameFaces))
+            {
+                File.Create(filenameFaces);
+            }
+
+            var lines = File.ReadAllLines(filenameFaces);
+            for (var i = 0; i < lines.Length; i += 1)
+            {
+                string line = lines[i];
+                RecognizedFace face = JsonConvert.DeserializeObject<RecognizedFace>(line);
+                AllFaces.Add(face);
+            }
+        }
 
     }
 }

@@ -84,6 +84,23 @@ namespace KinectMultiFaceRecognition
             Canvas.SetTop(textBlockBodyInfo, top);
 
             canvas.Children.Add(textBlockBodyInfo);
+
+            if(tracker.Name != null)
+            {
+                TextBlock faceName = new TextBlock();
+                faceName.Text = tracker.Name;
+
+                faceName.Foreground = new SolidColorBrush(color);
+                faceName.Width = 150;
+                faceName.Height = 40;
+                faceName.FontSize = 30;
+
+                Canvas.SetLeft(faceName, tracker.FaceBox.X - 50);
+                Canvas.SetTop(faceName, tracker.FaceBox.Y - 50);
+
+                canvas.Children.Add(faceName);
+            }
+
         }
 
         private void DrawFaceBoundingBox(HighDefinitionFaceFrame frame, FaceTracker tracker, Color color)
@@ -226,7 +243,7 @@ namespace KinectMultiFaceRecognition
             {
                 if(body.IsTracked)
                 {
-                    DrawSkeleton(body, colorIndex);
+                    DrawSkeleton(body, colorIndex++);
                 }            
             }
         }

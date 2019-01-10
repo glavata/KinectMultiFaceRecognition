@@ -72,5 +72,7 @@ namespace KinectMultiFaceRecognition
                 faceTracker.Source.TrackingId = 0;
             }
         }
+
+
     }
 }

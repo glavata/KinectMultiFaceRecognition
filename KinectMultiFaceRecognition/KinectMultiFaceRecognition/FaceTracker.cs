@@ -7,6 +7,8 @@ namespace KinectMultiFaceRecognition
 {
     public class FaceTracker
     {
+        private readonly int threshold = 20;
+
         private ulong trackingId;
 
         public FaceTracker(KinectSensor sensor, ulong trackingId)
@@ -22,6 +24,8 @@ namespace KinectMultiFaceRecognition
             this.ScreenshotTaken = false;
             this.Model = new FaceModel();
             this.FaceBox = new FaceBoundingBox();
+
+            this.Name = null;
         }
 
         public HighDefinitionFaceFrameSource Source { get; set; }
@@ -34,7 +38,9 @@ namespace KinectMultiFaceRecognition
 
         public FaceModel Model { get; set; }
 
-        public FaceBoundingBox FaceBox {get; set;}
+        public FaceBoundingBox FaceBox { get; set;}
+
+        public string Name { get; set; }
 
         public bool CollectionCompleted { get; private set; }
 
@@ -87,6 +93,28 @@ namespace KinectMultiFaceRecognition
             this.ModelBuilder = null;
 
             this.CollectionCompleted = true;
+
+            if(this.Name == null)
+            {
+                foreach (var face in DatabaseManager.AllFaces)
+                {
+                    double diff = 0;
+                    foreach(FaceShapeDeformations fs in Enum.GetValues(typeof(FaceShapeDeformations)))
+                    {
+                        if(fs != FaceShapeDeformations.Count)
+                        {
+                            diff += Math.Abs(face.Deformations[fs] - this.Model.FaceShapeDeformations[fs]);
+                        }
+                        
+                    }
+
+                    if(diff < threshold)
+                    {
+                        this.Name = face.Name;
+                        break;
+                    }
+                }
+            }
         }
 
         private void StopCollecting()

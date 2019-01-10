@@ -15,7 +15,6 @@ namespace KinectMultiFaceRecognition
     /// </summary>
     public partial class MainWindow : Window
     {
-        Dictionary<ulong, FaceTracker> facialStates = new Dictionary<ulong, FaceTracker>(6);
         private FaceManager faceManager;
         KinectSensor _sensor;
         MultiSourceFrameReader _reader;
@@ -45,9 +44,9 @@ namespace KinectMultiFaceRecognition
                 _pixels = new byte[_width * _height * 4];
                 _bitmap = new WriteableBitmap(_width, _height, 96.0, 96.0, PixelFormats.Bgra32, null);
 
-                this.facialStates = new Dictionary<ulong, FaceTracker>();
-
                 this.faceManager = new FaceManager(_sensor);
+
+                DatabaseManager.LoadFaceInfo();
 
                 this.drawingEngine = new DrawingEngine(_sensor, canvasDraw);
 
