@@ -80,8 +80,10 @@ namespace KinectMultiFaceRecognition
         private void HdFaceBuilder_CollectionCompleted(object sender, FaceModelBuilderCollectionCompletedEventArgs e)
         {
             var modelData = e.ModelData;
-            Task.Factory.StartNew(() => CreateFaceModel(modelData));
+            
             this.ModelBuilder.CollectionCompleted -= this.HdFaceBuilder_CollectionCompleted;
+            CreateFaceModel(modelData);
+            
 
             this.CollectionEventCalled = true;
         }
@@ -91,7 +93,7 @@ namespace KinectMultiFaceRecognition
             this.Model = data.ProduceFaceModel();         
             this.ModelBuilder.Dispose();
             this.ModelBuilder = null;
-
+            
             this.CollectionCompleted = true;
 
             if(this.Name == null)

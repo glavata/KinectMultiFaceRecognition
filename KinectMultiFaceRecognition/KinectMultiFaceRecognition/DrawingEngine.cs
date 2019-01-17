@@ -61,7 +61,11 @@ namespace KinectMultiFaceRecognition
                         
                         if(!manager.faceTrackers[i].ScreenshotTaken && manager.faceTrackers[i].CollectionCompleted)
                         {
-                            ScreenshotFace(manager.faceTrackers[i], lastBitmap);                            
+                            if(lastBitmap != null)
+                            {
+                                ScreenshotFace(manager.faceTrackers[i], lastBitmap); 
+                            }
+                                                       
                         }
 
                         counter++;

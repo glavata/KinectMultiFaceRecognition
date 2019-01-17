@@ -63,7 +63,7 @@ namespace KinectMultiFaceRecognition
         public int bodyCount { get; set; }
 
         private void HdFaceSource_TrackingIdLost(object sender, TrackingIdLostEventArgs e)
-        {
+        {           
             var faceTracker = this.faceTrackers.FirstOrDefault(a => a.TrackingId == e.TrackingId);
 
             if (faceTracker != null)
