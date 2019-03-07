@@ -6,24 +6,30 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectMultiFaceRecognition", "KinectMultiFaceRecognition\KinectMultiFaceRecognition.csproj", "{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Debug|x64.ActiveCfg = Debug|x64
+		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Debug|x64.Build.0 = Debug|x64
 		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Release|x64.ActiveCfg = Release|x64
+		{4957CF7E-23C5-47FC-941F-1F6B6C2CF2E0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {86AB872B-AB9F-4A54-A40F-5D38D6AFA8BB}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

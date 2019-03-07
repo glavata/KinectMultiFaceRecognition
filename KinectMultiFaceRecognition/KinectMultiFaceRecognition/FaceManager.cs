@@ -14,7 +14,9 @@ namespace KinectMultiFaceRecognition
 
         private Body[] bodies = null;
 
-        public FaceManager(KinectSensor sensor)
+        private RecognitionEngine recognitionEngine;
+
+        public FaceManager(KinectSensor sensor, RecognitionEngine rEngine)
         {
             this.kinectSensor = sensor;
 
@@ -31,8 +33,10 @@ namespace KinectMultiFaceRecognition
             for (int i = 0; i < this.bodyCount; i++)
             {
                 this.faceTrackers[i] = new FaceTracker(this.kinectSensor, 0);
-                //this.faceTrackers[i].Source.TrackingIdLost += HdFaceSource_TrackingIdLost;
+                this.faceTrackers[i].Source.TrackingIdLost += HdFaceSource_TrackingIdLost;
             }
+
+            this.recognitionEngine = rEngine;
         }
 
         private void Reader_BodyFrameArrived(object sender, BodyFrameArrivedEventArgs e)
@@ -50,7 +54,7 @@ namespace KinectMultiFaceRecognition
                             if (this.bodies[i].IsTracked)
                             {
                                 this.faceTrackers[i].TrackingId = this.bodies[i].TrackingId;
-                                this.faceTrackers[i].StartCollecting();
+                                this.faceTrackers[i].StartRecognition();                                
                             }
                         }
                     }
@@ -68,8 +72,7 @@ namespace KinectMultiFaceRecognition
 
             if (faceTracker != null)
             {
-                faceTracker.ModelBuilder.Dispose();
-                faceTracker.Source.TrackingId = 0;
+                faceTracker = new FaceTracker(this.kinectSensor, 0);
             }
         }
 

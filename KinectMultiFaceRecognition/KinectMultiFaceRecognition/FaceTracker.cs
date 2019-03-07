@@ -1,15 +1,28 @@
 ﻿using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Threading.Tasks;
 
 namespace KinectMultiFaceRecognition
 {
     public class FaceTracker
     {
-        private readonly int threshold = 20;
+
+
+        public enum TrackerStatus
+        {
+            Idle = 0,
+            InRecognition = 1,
+            Recognized = 2,
+            NotRecognized = 3,
+            InTraining = 4,
+            Trained = 5
+        }
 
         private ulong trackingId;
+
 
         public FaceTracker(KinectSensor sensor, ulong trackingId)
         {
@@ -17,15 +30,9 @@ namespace KinectMultiFaceRecognition
             this.Reader = this.Source.OpenReader();
             this.Alignment = new FaceAlignment();
             this.TrackingId = trackingId;
-
-            this.CollectionCompleted = false;         
-            this.CollectionEventCalled = false;
-
-            this.ScreenshotTaken = false;
             this.Model = new FaceModel();
             this.FaceBox = new FaceBoundingBox();
-
-            this.Name = null;
+            
         }
 
         public HighDefinitionFaceFrameSource Source { get; set; }
@@ -38,16 +45,8 @@ namespace KinectMultiFaceRecognition
 
         public FaceModel Model { get; set; }
 
-        public FaceBoundingBox FaceBox { get; set;}
+        public FaceBoundingBox FaceBox { get; set; }
 
-        public string Name { get; set; }
-
-        public bool CollectionCompleted { get; private set; }
-
-        public bool CollectionEventCalled { get; private set; }
-
-        public bool ScreenshotTaken { get; set; }
-        
         public ulong TrackingId
         {
             get
@@ -66,66 +65,40 @@ namespace KinectMultiFaceRecognition
             get { return this.Source.IsTrackingIdValid; }
         }
 
-        public void StartCollecting()
+        public void StartRecognition()
         {
-            this.StopCollecting();
-
-            this.ModelBuilder = this.Source.OpenModelBuilder(FaceModelBuilderAttributes.None);
-
-            this.ModelBuilder.BeginFaceDataCollection();
-            
-            this.ModelBuilder.CollectionCompleted += this.HdFaceBuilder_CollectionCompleted;
+            this.Status = TrackerStatus.InRecognition;
+            this.Recognizer = new FaceRecognizer();
         }
 
-        private void HdFaceBuilder_CollectionCompleted(object sender, FaceModelBuilderCollectionCompletedEventArgs e)
+        public FaceRecognizer Recognizer { get; private set; }
+
+        public void StartTraining()
         {
-            var modelData = e.ModelData;
-            
-            this.ModelBuilder.CollectionCompleted -= this.HdFaceBuilder_CollectionCompleted;
-            CreateFaceModel(modelData);
-            
-
-            this.CollectionEventCalled = true;
-        }
-
-        private void CreateFaceModel(FaceModelData data)
-        {
-            this.Model = data.ProduceFaceModel();         
-            this.ModelBuilder.Dispose();
-            this.ModelBuilder = null;
-            
-            this.CollectionCompleted = true;
-
-            if(this.Name == null)
+            if(this.Status == TrackerStatus.NotRecognized)
             {
-                foreach (var face in DatabaseManager.AllFaces)
-                {
-                    double diff = 0;
-                    foreach(FaceShapeDeformations fs in Enum.GetValues(typeof(FaceShapeDeformations)))
-                    {
-                        if(fs != FaceShapeDeformations.Count)
-                        {
-                            diff += Math.Abs(face.Deformations[fs] - this.Model.FaceShapeDeformations[fs]);
-                        }
-                        
-                    }
-
-                    if(diff < threshold)
-                    {
-                        this.Name = face.Name;
-                        break;
-                    }
-                }
+                this.Status = TrackerStatus.InTraining;
             }
         }
 
-        private void StopCollecting()
+        public void FinishTraining()
         {
-            if (this.ModelBuilder != null)
+            if (this.Status == TrackerStatus.InTraining)
             {
-                this.ModelBuilder.Dispose();
-                this.ModelBuilder = null;
+                this.Status = TrackerStatus.Trained;
             }
         }
+
+        public void FinishRecognition(bool successful)
+        {
+            if(this.Status == TrackerStatus.InRecognition)
+            {
+                this.Status = successful ? TrackerStatus.Recognized : TrackerStatus.NotRecognized;
+            }
+        }
+
+
+        public TrackerStatus Status { get; private set; }
+
     }
 }
